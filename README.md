@@ -9,7 +9,7 @@ This Three.js project is an interactive 3D concept for an Environmental Science 
 
 The building has a **glass-walled, cantilevered upper living floor** and an **earth-sheltered lower floor**. There are two separate ways to reach the house:
 
-- **Upper access:** a winding **driveway across the top of the hillside** approaches from the high ground, crosses a raised section, and connects to the **rear entrance of the upper floor**.
+- **Upper access:** a wider winding **driveway reaches the high ground above the second floor**. It ends at a landscaped parking/turnaround terrace with approximately two parking-bay markings. From there, an **outdoor staircase of about 30 steps descends to the rear second-floor entrance**, allowing access without driving down to the home's lower level.
 - **Lower access:** a recessed entrance faces the landscape below the house.
 
 The lower landscape features a **meandering river with rocky banks and cascading waterfalls**. This river **replaces the lake/pond** shown in earlier versions. Terraced gardens, trees, and a greenhouse complete the landscape.
@@ -37,7 +37,7 @@ These systems illustrate sustainable strategies; the model does not establish th
 | **01 / Exterior** | Overall house and hillside |
 | **02 / Water** | River and waterfalls |
 | **03 / Roof** | Solar array and living roof |
-| **04 / Driveway** | Upper approach road and access |
+| **04 / Driveway** | Wider road, upper parking terrace, and descending stairway |
 | **05 / Interior** | Close view of the upper glass living level |
 | Feature buttons / '+' markers | Learn about individual sustainability systems |
 | Hide roof / Reset view | Adjust roof visibility or restore camera |
@@ -65,6 +65,6 @@ From the folder containing `index.html`, run `py -m http.server 8000` on Windows
 
 ## Design limitations
 
-This is a **visual concept, not an engineered construction plan**. The driveway grade, vehicle access, retaining walls, bridge support, drainage and slope stability have not been verified. River erosion, setbacks, flood safety, and water quality would require site-specific analysis. Solar output, wind production, battery sizing, water treatment, heating/cooling loads, and embodied carbon also require real calculations.
+This is a **visual concept, not an engineered construction plan**. The wider driveway, parking layout, stair geometry, handrails, emergency access, retaining structures, drainage, and slope stability are conceptual and have not been verified against building codes or site conditions. River erosion, setbacks, flood safety, and water quality would require site-specific analysis. Solar output, wind production, battery sizing, water treatment, heating/cooling loads, and embodied carbon also require real calculations.
 
-**Next design goals:** refine the roadway grade and terrain intersection, make water movement more realistic, and incorporate higher-quality architecture, vegetation, and material assets.
+**Next design goals:** refine the road-to-landscape transition and staircase detailing, check real-world accessibility and slope constraints, and incorporate higher-quality architecture, vegetation, and material assets.
