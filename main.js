@@ -7,6 +7,12 @@ const orbit=new OrbitControls(camera,renderer.domElement);orbit.target.set(0,4,1
 scene.add(new THREE.HemisphereLight(0xd8e8ef,0x33442c,2.0));
 const sun=new THREE.DirectionalLight(0xffe1ac,3.3);sun.position.set(-19,28,18);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);sun.shadow.camera.left=-40;sun.shadow.camera.right=40;sun.shadow.camera.top=40;sun.shadow.camera.bottom=-40;sun.shadow.normalBias=.035;sun.shadow.bias=-.0001;scene.add(sun);
 const fill=new THREE.DirectionalLight(0x8bb9c1,.75);fill.position.set(18,9,-15);scene.add(fill);
+// Atmospheric gradient dome gives the environment depth without remote image dependencies.
+const sky=new THREE.Mesh(new THREE.SphereGeometry(110,48,28),new THREE.ShaderMaterial({
+ side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 vPosition; void main(){vPosition=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+ fragmentShader:'varying vec3 vPosition; void main(){float h=clamp(normalize(vPosition).y*.65+.37,0.0,1.0);vec3 horizon=vec3(.72,.77,.71);vec3 zenith=vec3(.30,.49,.58);gl_FragColor=vec4(mix(horizon,zenith,smoothstep(0.0,1.0,h)),1.0);}'
+}));scene.add(sky);
+
 let seed=74119;function random(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
 const mat=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
 function texture(rgb,variation=45,streak=0){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),data=x.createImageData(256,256);for(let y=0;y<256;y++)for(let i=0;i<256;i++){const p=(y*256+i)*4,n=(random()-.5)*variation+Math.sin(y*.25+Math.sin(i*.03))*streak;for(let k=0;k<3;k++)data.data[p+k]=Math.max(0,Math.min(255,rgb[k]+n));data.data[p+3]=255}x.putImageData(data,0,0);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);return t}
@@ -17,7 +23,22 @@ function box(w,h,d,x,y,z,m,parent){return mesh(new THREE.BoxGeometry(w,h,d),m,x,
 function ball(r,x,y,z,m,detail=1){return mesh(new THREE.IcosahedronGeometry(r,detail),m,x,y,z)}
 function cylinder(r,h,x,y,z,m,segments=16){return mesh(new THREE.CylinderGeometry(r,r,h,segments),m,x,y,z)}
 function line(a,b,r,m){const dir=new THREE.Vector3(...b).sub(new THREE.Vector3(...a));const obj=mesh(new THREE.CylinderGeometry(r,r,dir.length(),8),m,...new THREE.Vector3(...a).add(new THREE.Vector3(...b)).multiplyScalar(.5).toArray());obj.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());return obj}
-function terrainHeight(x,z){let y=.05+Math.max(0,(-z-2)*.26);y+=1.4*Math.exp(-Math.pow((x+16)/8,2)-Math.pow((z+1)/7,2));y+=1.5*Math.exp(-Math.pow((x-15)/9,2)-Math.pow((z+3)/9,2));y+=.35*Math.sin(x*.24)*Math.cos(z*.28);return y}
+// Terrain contains an actual depressed river corridor rather than water painted over grass.
+function riverCenterZ(x){
+ const pts=[[-48,18],[-29,16],[-18,13.3],[-10,14.4],[-1,18],[10,22],[22,19.5],[40,22]];
+ for(let i=0;i<pts.length-1;i++)if(x<=pts[i+1][0]){
+  const t=THREE.MathUtils.clamp((x-pts[i][0])/(pts[i+1][0]-pts[i][0]),0,1);
+  const u=t*t*(3-2*t);return THREE.MathUtils.lerp(pts[i][1],pts[i+1][1],u);
+ }return 22;
+}
+function terrainHeight(x,z){
+ let y=.05+Math.max(0,(-z-2)*.26);
+ y+=1.4*Math.exp(-Math.pow((x+16)/8,2)-Math.pow((z+1)/7,2));
+ y+=1.5*Math.exp(-Math.pow((x-15)/9,2)-Math.pow((z+3)/9,2));
+ y+=.3*Math.sin(x*.24)*Math.cos(z*.28)+.11*Math.sin(x*.77+z*.63);
+ const d=Math.abs(z-riverCenterZ(x)),channel=1-THREE.MathUtils.smoothstep(d,3,6.8);
+ return THREE.MathUtils.lerp(y,-.65,channel);
+}
 const groundGeo=new THREE.PlaneGeometry(105,100,140,140);groundGeo.rotateX(-Math.PI/2);const a=groundGeo.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i);a.setY(i,terrainHeight(x,z)-.35)}groundGeo.computeVertexNormals();mesh(groundGeo,turf);
 const lower=box(12.7,3.35,9.2,0,1.55,1.6,rock);box(12.2,3,.22,0,1.55,6.28,stone);
 for(let i=0;i<65;i++){const x=-6.1+(i%13)*.98,y=.25+Math.floor(i/13)*.62;box(.88,.55,.06,x,y,6.43,i%3===0?rock:stone)}
@@ -36,6 +57,17 @@ for(let i=0;i<130;i++){const x=(random()-.5)*17,z=(random()-.5)*9.7;const r=.08+
 box(19,.19,2.4,0,3.52,8.12,wood,upper);for(let x=-9;x<=9;x+=1.5){box(.055,1,.055,x,4.14,9.25,metal,upper)}box(18,.065,.06,0,4.62,9.25,metal,upper);
 for(const x of [-6.4,-3.1,.4,4.1]){box(1.8,.5,.85,x,4.1,5.25,mat(0xb5aa90),upper);box(1.8,.22,.65,x,4.48,5.15,mat(0xc4b8a0),upper)}
 for(const x of [-5,0,5]){const light=new THREE.PointLight(0xffb96b,12,11,2);light.position.set(x,6.75,4.5);scene.add(light);box(1.8,.04,.35,x,7.06,4.5,mat(0xffd49b,.35),upper)}
+
+// Crisp facade details: mullion caps, stone paving joints, and balcony furniture.
+for(let x=-8;x<=8;x+=2.04)box(.022,3.2,.065,x,5.5,7.27,metal,upper);
+for(let i=0;i<18;i++)box(.026,.018,2.34,-8.75+i*1.04,3.65,8.1,stone,upper);
+for(let x of [-6,0,6]){
+ const table=box(.72,.07,.72,x,4.16,8.05,wood,upper);
+ cylinder(.038,.42,x,3.94,8.05,metal);
+ for(let k of [-.75,.75]){box(.52,.07,.42,x+k,4.09,8.05,wood,upper);box(.05,.34,.05,x+k,3.93,8.05,metal,upper)}
+}
+// Wall-mounted timber slats along the solid upper-level side return.
+for(let i=0;i<33;i++)box(.045,3.13,.06,-8.73,5.49,-2.2+i*.275,wood,upper);
 // solar panel frames and individual cells
 for(let row=0;row<2;row++)for(let col=0;col<7;col++){const x=-7.6+col*2.42,z=-1.4+row*3.15;const panel=new THREE.Group();panel.position.set(x,8.13,z);panel.rotation.x=-.19;upper.add(panel);box(2.22,.07,2.75,0,0,0,dark,panel);box(2.12,.03,2.63,0,.055,0,solar,panel);for(let j=1;j<5;j++)box(2.1,.012,.012,0,.077,-1.3+j*.52,metal,panel);for(let j=1;j<4;j++)box(.012,.012,2.6,-1.06+j*.53,.077,0,metal,panel)}
 // Driveway enters from the high ground behind the house, with a raised access bridge.
@@ -121,6 +153,23 @@ for(let i=0;i<135;i++){
  const sign=random()>.5?1:-1,offset=3.6+random()*3.7;
  ball(.08+random()*.24,p.x+side.x*sign*offset,.13,p.z+side.z*sign*offset,random()>.82?flower:plant,0);
 }
+
+// Animated transparent current ribbons and small whitewater accents, following the river's curve.
+const flowStreaks=[];
+const currentMat=new THREE.MeshBasicMaterial({color:0xc6e9df,transparent:true,opacity:.19,depthWrite:false,side:THREE.DoubleSide});
+for(let i=0;i<70;i++){
+ const t=.05+random()*.9,p=riverPath.getPoint(t),tangent=riverPath.getTangent(t),side=new THREE.Vector3(-tangent.z,0,tangent.x);
+ const o=mesh(new THREE.PlaneGeometry(.035+random()*.06,.85+random()*1.5),currentMat,p.x+side.x*(random()-.5)*3,.155,p.z+side.z*(random()-.5)*3);
+ o.rotation.x=-Math.PI/2;o.rotation.z=Math.atan2(tangent.z,tangent.x)+Math.PI/2;
+ flowStreaks.push({object:o,offset:t,speed:.002+random()*.002,lateral:(random()-.5)*3});
+}
+const bankGrass=mat(0x789b55,.95),dryReed=mat(0xb4a776,.9);
+for(let i=0;i<310;i++){
+ const t=.02+random()*.96,p=riverPath.getPoint(t),d=riverPath.getTangent(t),n=new THREE.Vector3(-d.z,0,d.x);
+ const side=random()>.5?1:-1,dist=3.6+random()*2.6;
+ const x=p.x+n.x*side*dist,z=p.z+n.z*side*dist;
+ for(let k=0;k<3;k++){const blade=line([x,.13,z],[x+(random()-.5)*.18,.35+random()*.55,z+(random()-.5)*.18],.009,k===0?dryReed:bankGrass);blade.castShadow=false;}
+}
 // cascades
 const waterfallMat=new THREE.MeshPhysicalMaterial({color:0x8bc7d5,transparent:true,opacity:.65,roughness:.08,metalness:.1,side:THREE.DoubleSide});
 for(let level=0;level<3;level++){const x=-12-level*2,z=9+level*2.2,y=2.5-level*.85;for(let k=0;k<18;k++){const strand=box(.045+random()*.08,1.9,.035,x+(k-9)*.17,y,z,waterfallMat);strand.rotation.z=(random()-.5)*.18}for(let j=0;j<16;j++)ball(.08+random()*.13,x+(random()-.5)*3,y-.95,z+.25,mat(0xd4e6e2,.15),0)}
@@ -139,6 +188,23 @@ line([9.6,.5,12.5],[9.6,.5,15],.055,metal);
 // turbine with elegant vertical blades
 cylinder(.14,9.2,21,6,-8,metal);const rotor=new THREE.Group();rotor.position.set(21,11,-8);scene.add(rotor);
 for(let i=0;i<3;i++){const a=i*Math.PI*2/3;const x=Math.cos(a)*1.2,z=Math.sin(a)*1.2;line([x,-2,z],[x*.7,2,z*.7],.12,metal);line([0,-2,0],[x,-2,z],.06,metal);line([0,2,0],[x*.7,2,z*.7],.06,metal)}
+
+// Irregular stone embankments and native planting pockets at the house perimeter.
+for(let i=0;i<95;i++){
+ const x=-21+random()*42,z=7+random()*7;
+ if(Math.abs(x)<4&&z<10)continue;
+ const y=terrainHeight(x,z);
+ const r=.17+random()*.46;
+ const o=mesh(new THREE.DodecahedronGeometry(r,1),random()>.5?rock:stone,x,y+.05,z);
+ o.scale.set(.8+random()*1.2,.35+random()*.55,1.15);o.rotation.y=random()*Math.PI;
+}
+for(let i=0;i<130;i++){
+ const x=(random()-.5)*40,z=-.5+random()*14;
+ if(Math.abs(x)<11&&z<10)continue;
+ const y=terrainHeight(x,z);
+ const shrub=ball(.15+random()*.3,x,y+.18,z,i%7===0?flower:i%3===0?leaf2:plant,1);
+ shrub.scale.set(1.3,.65,1);
+}
 // vegetation: multi-layered trees with varied leaf clusters
 function tree(x,z,s){const y=terrainHeight(x,z)-.3;const trunk=cylinder(.14*s,2.4*s,x,y+1.2*s,z,wood,8);trunk.rotation.z=(random()-.5)*.08;for(let i=0;i<6;i++){const a=i*2.399,px=x+Math.cos(a)*.55*s,pz=z+Math.sin(a)*.5*s,py=y+(2.6+random()*.9)*s;const b=ball((.7+random()*.35)*s,px,py,pz,i%3?plant:leaf2,1);b.scale.set(1,.8,1)}}
 for(let i=0;i<105;i++){const x=(random()-.5)*82,z=-12-random()*36;if(Math.abs(x)<12&&z>-22)continue;tree(x,z,.75+random()*.8)}
@@ -166,5 +232,7 @@ document.getElementById('reset').onclick=()=>go('overview');
 document.getElementById('roofToggle').onclick=e=>{upper.visible=true;const show=upper.children.filter(c=>c.position.y>7.2);const visible=!show[0].visible;show.forEach(o=>o.visible=visible);e.target.textContent=visible?'Hide roof':'Show roof'};
 document.getElementById('togglePanel').onclick=e=>{const body=document.getElementById('panelBody');body.hidden=!body.hidden;e.target.textContent=body.hidden?'+':'−'};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-const clock=new THREE.Clock();renderer.setAnimationLoop(()=>{const t=clock.getElapsedTime();rotor.rotation.y=t*.18;orbit.update();for(const marker of markers){const p=marker.pos.clone().project(camera);marker.el.style.display=p.z<1&&p.z>-1?'block':'none';marker.el.style.left=(p.x*.5+.5)*innerWidth+'px';marker.el.style.top=(-p.y*.5+.5)*innerHeight+'px'}renderer.render(scene,camera)});
+const clock=new THREE.Clock();renderer.setAnimationLoop(()=>{const t=clock.getElapsedTime();rotor.rotation.y=t*.18;
+ for(const flow of flowStreaks){const u=(flow.offset+t*flow.speed)%1,p=riverPath.getPoint(u),dir=riverPath.getTangent(u).normalize(),n=new THREE.Vector3(-dir.z,0,dir.x);flow.object.position.set(p.x+n.x*flow.lateral,.165,p.z+n.z*flow.lateral);flow.object.rotation.z=Math.atan2(dir.z,dir.x)+Math.PI/2;}
+ orbit.update();for(const marker of markers){const p=marker.pos.clone().project(camera);marker.el.style.display=p.z<1&&p.z>-1?'block':'none';marker.el.style.left=(p.x*.5+.5)*innerWidth+'px';marker.el.style.top=(-p.y*.5+.5)*innerHeight+'px'}renderer.render(scene,camera)});
 requestAnimationFrame(()=>document.getElementById('loading').classList.add('hidden'));
