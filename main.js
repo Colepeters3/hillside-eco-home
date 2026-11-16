@@ -60,7 +60,7 @@ function stripOnDrive(offsetY,width,material){
    const v=p.clone().addScaledVector(n,side*width);
    vertices.push(v.x,v.y+offsetY,v.z);uv.push(t*14,(side+1)*.5);
   }
-  if(i<total){let j=i*2;indices.push(j,j+2,j+1,j+1,j+2,j+3)}
+  if(i<total){let j=i*2;indices.push(j,j+1,j+2,j+1,j+3,j+2)}
  }
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
  return mesh(geo,material);
@@ -104,7 +104,7 @@ for(let i=0;i<=riverSegments;i++){
  const side=new THREE.Vector3(-tan.z,0,tan.x),width=3.0+.48*Math.sin(t*Math.PI*5);
  for(const sign of [-1,1]){const edge=p.clone().addScaledVector(side,sign*width);riverVerts.push(edge.x,.12,edge.z);riverUV.push(t*16,(sign+1)*.5)}
  riverBank.push([p.clone(),side.clone(),width]);
- if(i<riverSegments){const j=i*2;riverIndices.push(j,j+2,j+1,j+1,j+2,j+3)}
+ if(i<riverSegments){const j=i*2;riverIndices.push(j,j+1,j+2,j+1,j+3,j+2)}
 }
 const riverGeo=new THREE.BufferGeometry();riverGeo.setAttribute('position',new THREE.Float32BufferAttribute(riverVerts,3));riverGeo.setAttribute('uv',new THREE.Float32BufferAttribute(riverUV,2));riverGeo.setIndex(riverIndices);riverGeo.computeVertexNormals();mesh(riverGeo,water);
 for(let i=4;i<riverSegments-4;i+=2){
