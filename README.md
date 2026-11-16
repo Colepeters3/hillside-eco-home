@@ -7,10 +7,10 @@ This Three.js project is an interactive 3D concept for an Environmental Science 
 
 ## Design overview
 
-The building has a **glass-walled, cantilevered upper living floor** and an **earth-sheltered lower floor**. There are two separate ways to reach the house:
+The building has a **glass-walled, cantilevered upper living floor** and a **largely underground first floor excavated into the hillside**. The lower room is modeled with a hollow interior, earth-covered back and sides, stone retaining structure, and a recessed glass entrance facing the river. There are two separate ways to reach the house:
 
 - **Upper access:** a wider winding **driveway reaches the high ground above the second floor**. It ends at a landscaped parking/turnaround terrace with approximately two parking-bay markings. From there, an **outdoor staircase of about 30 steps descends to the rear second-floor entrance**, allowing access without driving down to the home's lower level.
-- **Lower access:** a recessed entrance faces the landscape below the house.
+- **Lower access:** a daylight-facing entry is set into a stone-lined opening at the bottom of the slope, with the surrounding ground burying most of the first floor. Natural light enters from the exposed river-facing side.
 
 The lower landscape features a **meandering river with rocky banks and cascading waterfalls**. This river **replaces the lake/pond** shown in earlier versions. Terraced gardens, trees, and a greenhouse complete the landscape.
 
@@ -18,7 +18,7 @@ The lower landscape features a **meandering river with rocky banks and cascading
 
 - Rooftop photovoltaic **solar panels**
 - Planted **green roof**
-- **Earth-sheltered construction**, natural daylight, and passive shading
+- **Underground first-story construction**, surrounding thermal mass, natural daylight from the exposed façade, and passive shading
 - Conceptual **vertical-axis wind turbine**
 - **Rainwater storage** tanks and potential nonpotable reuse
 - Potential **greywater recycling**, subject to treatment and local requirements
@@ -65,6 +65,6 @@ From the folder containing `index.html`, run `py -m http.server 8000` on Windows
 
 ## Design limitations
 
-This is a **visual concept, not an engineered construction plan**. The wider driveway, parking layout, stair geometry, handrails, emergency access, retaining structures, drainage, and slope stability are conceptual and have not been verified against building codes or site conditions. River erosion, setbacks, flood safety, and water quality would require site-specific analysis. Solar output, wind production, battery sizing, water treatment, heating/cooling loads, and embodied carbon also require real calculations.
+This is a **visual concept, not an engineered construction plan**. The underground lower story, retaining walls, waterproofing, groundwater drainage, safe emergency egress, wider driveway, parking layout, stair geometry, handrails, emergency access, and slope stability are conceptual and have not been verified against building codes or site conditions. River erosion, setbacks, flood safety, and water quality would require site-specific analysis. Solar output, wind production, battery sizing, water treatment, heating/cooling loads, and embodied carbon also require real calculations.
 
-**Next design goals:** refine the road-to-landscape transition and staircase detailing, check real-world accessibility and slope constraints, and incorporate higher-quality architecture, vegetation, and material assets.
+**Next design goals:** refine how the underground walls meet the surrounding soil, design drainage and emergency exits, improve the road-to-landscape transition and staircase details, and incorporate higher-quality architecture and vegetation assets.
