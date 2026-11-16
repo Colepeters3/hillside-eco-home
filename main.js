@@ -38,14 +38,62 @@ function terrainHeight(x,z){
  y+=.3*Math.sin(x*.24)*Math.cos(z*.28)+.11*Math.sin(x*.77+z*.63);
  const d=Math.abs(z-riverCenterZ(x)),channel=1-THREE.MathUtils.smoothstep(d,3,6.8);
  const base=THREE.MathUtils.lerp(y,-.65,channel);
- // Hill rises to meet the roof elevation, with a level ridge behind the upper story.
+ // The higher ridge still accommodates the driveway and steps down to the upper story.
  const ridge=THREE.MathUtils.smoothstep(-z,7,16)*(1-THREE.MathUtils.smoothstep(Math.abs(x-1),17,34));
- return THREE.MathUtils.lerp(base,Math.max(base,9.0),ridge);
+ const highGround=THREE.MathUtils.lerp(base,Math.max(base,9.0),ridge);
+ // Excavated building pocket: earth wraps around the rear and BOTH side walls
+ // of the first floor. The front center tapers to ground level for a river-facing entrance.
+ const flank=Math.exp(-Math.pow((Math.abs(x)-7.8)/3.25,2))*Math.exp(-Math.pow((z-1.0)/7.6,2));
+ const back=(1-THREE.MathUtils.smoothstep(z,-3.7,5.1))*(1-THREE.MathUtils.smoothstep(Math.abs(x),5.0,14.0));
+ const undergroundEnvelope=Math.max(flank,back);
+ const target=THREE.MathUtils.lerp(highGround,4.08,undergroundEnvelope);
+ return Math.max(highGround,target);
 }
 const groundGeo=new THREE.PlaneGeometry(105,100,140,140);groundGeo.rotateX(-Math.PI/2);const a=groundGeo.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i);a.setY(i,terrainHeight(x,z)-.35)}groundGeo.computeVertexNormals();mesh(groundGeo,turf);
-const lower=box(12.7,3.35,9.2,0,1.55,1.6,rock);box(12.2,3,.22,0,1.55,6.28,stone);
-for(let i=0;i<65;i++){const x=-6.1+(i%13)*.98,y=.25+Math.floor(i/13)*.62;box(.88,.55,.06,x,y,6.43,i%3===0?rock:stone)}
-box(5.8,2.75,.22,0,1.45,6.5,dark);box(5.42,2.42,.13,0,1.45,6.65,glass);box(.1,2.45,.17,0,1.45,6.74,dark);box(6.8,.18,2.6,0,.05,7.65,wood);
+// The underground first floor is a HOLLOW earth-sheltered room, not a solid block.
+// Back and side walls disappear naturally behind the sculpted earth berms.
+const lower=new THREE.Group();scene.add(lower);
+box(12.7,.28,9.2,0,-.04,1.6,stone,lower); // slab foundation
+box(12.7,3.35,.35,0,1.55,-2.96,rock,lower); // buried rear wall
+for(const side of [-1,1])box(.37,3.35,9.2,side*6.17,1.55,1.6,rock,lower);
+box(12.7,.24,9.2,0,3.32,1.6,stone,lower); // earth-contact upper boundary
+// Front wall is solid only on both flanks: the central entrance is cut open.
+for(const side of [-1,1])box(3.47,3.05,.3,side*4.62,1.54,6.24,stone,lower);
+box(6.4,.68,.32,0,2.76,6.25,stone,lower); // stone header above doorway
+// Masonry courses show around the excavated opening, not through the glass.
+for(let i=0;i<65;i++){
+ const x=-6.1+(i%13)*.98,y=.25+Math.floor(i/13)*.62;
+ if(Math.abs(x)>3.12||y>2.5)box(.88,.55,.06,x,y,6.44,i%3===0?rock:stone,lower);
+}
+// Recessed glass doorway, retaining side reveals, and covered landing.
+for(const side of [-1,1]){
+ box(.34,2.85,.78,side*3.05,1.45,6.46,rock,lower);
+ box(.22,3.18,.2,side*2.88,1.5,6.73,dark,lower);
+}
+box(5.68,.16,.26,0,2.83,6.67,dark,lower);
+box(5.48,2.48,.12,0,1.48,6.72,glass,lower);
+box(.095,2.48,.15,0,1.48,6.84,dark,lower);
+box(.08,.19,.08,.29,1.15,6.92,metal,lower); // door handle
+box(6.9,.17,3.0,0,.035,7.48,wood);
+// Details can now be seen through the lower-level glazing.
+const floorMat=textured([143,124,94],[3,4],24,7);
+box(11.8,.045,8.3,0,.13,1.38,floorMat,lower);
+box(3.25,.57,1.35,-1.25,.49,2.2,mat(0x7b6854),lower);
+box(2.65,.16,.9,-1.25,.83,2.04,mat(0xc1ae8e),lower);
+box(1.25,.1,.7,2.2,.52,2.55,wood,lower);
+for(const side of [-1,1]){
+ const lamp=new THREE.PointLight(0xffc58b,9,8,2);lamp.position.set(side*3.4,2.55,3.9);scene.add(lamp);
+}
+// Stone cheeks and a planted top edge visually tie the cave-like entry to its landscape.
+for(const side of [-1,1]){
+ box(1.2,2.2,1.1,side*5.68,1.08,6.48,rock);
+ for(let i=0;i<19;i++){
+  const x=side*(5.0+random()*2.5),z=4.8+random()*2.6;
+  const y=terrainHeight(x,z)-.21;
+  const b=ball(.12+random()*.24,x,y,z,random()>.83?flower:random()>.5?plant:leaf2,0);
+  b.scale.set(1.1,.5,1.2);
+ }
+}
 const upper=new THREE.Group();scene.add(upper);
 box(18.6,.38,10.6,0,3.56,2.25,dark,upper);
 box(17.8,.25,9.7,0,3.84,2.25,wood,upper);
@@ -235,7 +283,7 @@ for(let i=0;i<105;i++){const x=(random()-.5)*82,z=-12-random()*36;if(Math.abs(x)
 for(let i=0;i<170;i++){const x=(random()-.5)*58,z=-3+random()*20;if(Math.abs(x)<10&&z<11)continue;if(x>-1&&x<20&&z>0&&z<13)continue;const y=terrainHeight(x,z);for(let j=0;j<3;j++)ball(.13+random()*.3,x+(random()-.5)*.5,y,z+(random()-.5)*.5,random()>.92?flower:random()>.5?plant:leaf2,0)}
 const features=[
 ['Glass living level','The long upper floor uses high-performance glazing, shading, and daylighting. Real performance depends on glazing specification and orientation.',[0,5.4,7.3]],
-['Earth-sheltered entrance','The lower level is recessed into the hillside. Earth contact can help moderate temperatures when waterproofing and insulation are properly designed.',[0,1.5,6.7]],
+['Underground first floor','The lower level is excavated into the hillside: its back and side walls are enclosed by earth, while the daylight-facing entrance remains exposed toward the river. Waterproofing, drainage and egress must be engineered.',[0,1.5,6.8]],
 ['Solar array','The roof carries a modeled photovoltaic array. Net-zero operation requires energy modeling, storage, and real production data.',[-3,8.2,1]],
 ['Living roof','Vegetation and substrate can slow stormwater runoff, support pollinators, and buffer roof temperatures.',[6,7.9,5]],
 ['River & cascades','A meandering river replaces the former lake, with rocky edges and a waterfall. River water is not assumed safe for drinking.',[-13,1.2,13]],
