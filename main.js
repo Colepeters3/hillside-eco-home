@@ -41,7 +41,7 @@ for(let row=0;row<2;row++)for(let col=0;col<7;col++){const x=-7.6+col*2.42,z=-1.
 // rough stone retaining walls
 for(let i=0;i<135;i++){const x=-18+(i%27)*1.4,z=9+Math.floor(i/27)*.8;const y=terrainHeight(x,z)+.03;const b=box(1.2,.35,.75,x,y,z,i%3===0?rock:stone);b.rotation.y=(random()-.5)*.3}
 // natural lake surface and shoreline
-const lakeShape=new THREE.Shape();lakeShape.moveTo(-23,12);lakeShape.bezierCurveTo(-32,17,-27,29,-12,31);lakeShape.bezierCurveTo(1,34,16,27,14,18);lakeShape.bezierCurveTo(9,10,-6,12,-23,12);const lakeGeo=new THREE.ShapeGeometry(lakeShape,40);lakeGeo.rotateX(-Math.PI/2);mesh(lakeGeo,water,0,.04,0);
+const lakeShape=new THREE.Shape();lakeShape.moveTo(-23,12);lakeShape.bezierCurveTo(-32,17,-27,29,-12,31);lakeShape.bezierCurveTo(1,34,16,27,14,18);lakeShape.bezierCurveTo(9,10,-6,12,-23,12);const lakeGeo=new THREE.ShapeGeometry(lakeShape,40);lakeGeo.rotateX(Math.PI/2);mesh(lakeGeo,water,0,.04,0);
 for(let i=0;i<220;i++){const t=random()*Math.PI*2,x=-7+20*Math.cos(t),z=21+9*Math.sin(t);const r=.15+random()*.65;const o=mesh(new THREE.DodecahedronGeometry(r,1),i%3?rock:stone,x,.1,z);o.scale.set(1,.45,1.1);o.rotation.y=random()*Math.PI}
 // cascades
 const waterfallMat=new THREE.MeshPhysicalMaterial({color:0x8bc7d5,transparent:true,opacity:.65,roughness:.08,metalness:.1,side:THREE.DoubleSide});
