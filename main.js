@@ -37,7 +37,10 @@ function terrainHeight(x,z){
  y+=1.5*Math.exp(-Math.pow((x-15)/9,2)-Math.pow((z+3)/9,2));
  y+=.3*Math.sin(x*.24)*Math.cos(z*.28)+.11*Math.sin(x*.77+z*.63);
  const d=Math.abs(z-riverCenterZ(x)),channel=1-THREE.MathUtils.smoothstep(d,3,6.8);
- return THREE.MathUtils.lerp(y,-.65,channel);
+ const base=THREE.MathUtils.lerp(y,-.65,channel);
+ // Hill rises to meet the roof elevation, with a level ridge behind the upper story.
+ const ridge=THREE.MathUtils.smoothstep(-z,7,16)*(1-THREE.MathUtils.smoothstep(Math.abs(x-1),17,34));
+ return THREE.MathUtils.lerp(base,Math.max(base,9.0),ridge);
 }
 const groundGeo=new THREE.PlaneGeometry(105,100,140,140);groundGeo.rotateX(-Math.PI/2);const a=groundGeo.attributes.position;for(let i=0;i<a.count;i++){const x=a.getX(i),z=a.getZ(i);a.setY(i,terrainHeight(x,z)-.35)}groundGeo.computeVertexNormals();mesh(groundGeo,turf);
 const lower=box(12.7,3.35,9.2,0,1.55,1.6,rock);box(12.2,3,.22,0,1.55,6.28,stone);
@@ -70,56 +73,77 @@ for(let x of [-6,0,6]){
 for(let i=0;i<33;i++)box(.045,3.13,.06,-8.73,5.49,-2.2+i*.275,wood,upper);
 // solar panel frames and individual cells
 for(let row=0;row<2;row++)for(let col=0;col<7;col++){const x=-7.6+col*2.42,z=-1.4+row*3.15;const panel=new THREE.Group();panel.position.set(x,8.13,z);panel.rotation.x=-.19;upper.add(panel);box(2.22,.07,2.75,0,0,0,dark,panel);box(2.12,.03,2.63,0,.055,0,solar,panel);for(let j=1;j<5;j++)box(2.1,.012,.012,0,.077,-1.3+j*.52,metal,panel);for(let j=1;j<4;j++)box(.012,.012,2.6,-1.06+j*.53,.077,0,metal,panel)}
-// Driveway enters from the high ground behind the house, with a raised access bridge.
-// The road climbs along the ridge and meets the upper level through a rear entry.
-const asphalt=textured([64,68,65],[4,18],24);
-const roadPoints=[
- new THREE.Vector3(27,7.35,-32),
- new THREE.Vector3(23,6.8,-28),
- new THREE.Vector3(18,6.05,-23),
- new THREE.Vector3(12,5.35,-18),
- new THREE.Vector3(7,4.7,-14),
- new THREE.Vector3(3.2,4.05,-9),
- new THREE.Vector3(0,3.89,-3.1)
-];
-const drivewayCurve=new THREE.CatmullRomCurve3(roadPoints,false,'centripetal');
-function stripOnDrive(offsetY,width,material){
- const vertices=[],uv=[],indices=[],total=95;
+// HIGH GROUND: broad driveway and parking terrace above the upper-level entrance.
+const asphalt=textured([78,85,80],[8,14],27),pavers=textured([127,135,122],[6,6],33,5);
+const curb=mat(0xaba699),paint=mat(0xe2e7d9),rail=mat(0x747d73,.27,.65);
+const padY=9.3,padZ=-18;
+box(16,.38,10,1,padY-.25,padZ,stone);
+box(15.65,.08,9.65,1,padY-.05,padZ,pavers);
+for(const x of [-7,9])box(.2,.25,10,x,padY+.04,padZ,curb);
+box(16,.25,.2,1,padY+.04,-22.92,curb);
+for(const x of [-6.1,-2,2])box(.08,.016,5.5,x,padY+.009,-18.6,paint);
+for(const z of [-20.9,-15.8])box(8.1,.016,.075,-2.05,padY+.009,z,paint);
+// A wider road leads into the parking court; the road no longer ends at the door.
+const drivewayCurve=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(29,9.9,-37),new THREE.Vector3(26,9.9,-34),
+ new THREE.Vector3(22,9.72,-30),new THREE.Vector3(18,9.56,-27),
+ new THREE.Vector3(14,9.44,-24),new THREE.Vector3(9,9.34,-20)
+],false,'centripetal');
+function stripOnDrive(heightOffset,halfWidth,material){
+ const vertices=[],uv=[],indices=[],total=100;
  for(let i=0;i<=total;i++){
-  const t=i/total,p=drivewayCurve.getPoint(t),d=drivewayCurve.getTangent(t).normalize();
-  const n=new THREE.Vector3(-d.z,0,d.x);
-  for(let side of [-1,1]){
-   const v=p.clone().addScaledVector(n,side*width);
-   vertices.push(v.x,v.y+offsetY,v.z);uv.push(t*14,(side+1)*.5);
+  const t=i/total,p=drivewayCurve.getPoint(t),d=drivewayCurve.getTangent(t).normalize(),n=new THREE.Vector3(-d.z,0,d.x);
+  for(const side of [-1,1]){
+   const v=p.clone().addScaledVector(n,side*halfWidth);
+   vertices.push(v.x,v.y+heightOffset,v.z);uv.push(t*12,(side+1)/2);
   }
-  if(i<total){let j=i*2;indices.push(j,j+1,j+2,j+1,j+3,j+2)}
+  if(i<total){const j=i*2;indices.push(j,j+1,j+2,j+1,j+3,j+2)}
  }
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
- return mesh(geo,material);
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+ geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ geo.setIndex(indices);geo.computeVertexNormals();return mesh(geo,material);
 }
-stripOnDrive(-.19,2.25,stone);stripOnDrive(.035,2.06,asphalt);
-for(let i=3;i<89;i+=8){
- const p=drivewayCurve.getPoint(i/95),tan=drivewayCurve.getTangent(i/95),n=new THREE.Vector3(-tan.z,0,tan.x);
- for(let sign of [-1,1]){
-  const edge=p.clone().addScaledVector(n,sign*2.25);
-  // Lightweight retaining piers visually support the elevated driveway.
-  const below=Math.max(0,p.y-terrainHeight(edge.x,edge.z));
-  if(below>.8)box(.33,below,.33,edge.x,p.y-below/2-.12,edge.z,stone);
-  box(.2,.65,.2,edge.x,p.y+.34,edge.z,stone);
+stripOnDrive(-.17,3.42,stone);stripOnDrive(.035,3.18,asphalt);
+for(let i=3;i<96;i+=11){
+ const p=drivewayCurve.getPoint(i/100),d=drivewayCurve.getTangent(i/100).normalize(),n=new THREE.Vector3(-d.z,0,d.x);
+ for(const sign of [-1,1]){
+  const edge=p.clone().addScaledVector(n,sign*3.45);
+  const height=Math.max(0,edge.y-terrainHeight(edge.x,edge.z)+.35);
+  if(height>.55)box(.45,height,.45,edge.x,edge.y-height/2-.15,edge.z,stone);
+  cylinder(.10,.36,edge.x,edge.y+.23,edge.z,curb,10);
  }
 }
-// Vehicle-scale hints on the driveway: two thin edge guide lines.
-for(let i=0;i<70;i++){
- const t=(i+.5)/92,p=drivewayCurve.getPoint(t),tan=drivewayCurve.getTangent(t).normalize();
- const dash=box(.06,.015,.38,p.x,p.y+.055,p.z,mat(0xe1d7a2,.75));
- dash.rotation.y=Math.atan2(tan.x,tan.z);
+// Parking pad and EV charger; edge posts trace the arrival overlook.
+box(.33,1.23,.28,-6.4,padY+.64,-21.7,metal);
+box(.29,.25,.07,-6.4,padY+1,-21.53,mat(0x8dc9a9,.24,.1));
+for(const x of [-7,-5,-3,3,5,7,9]){
+ const h=Math.max(.5,padY-terrainHeight(x,-13.02));
+ box(.32,h,.36,x,padY-h/2-.13,-13,stone);
 }
-// Rear upper-level doorway and threshold at the driveway arrival.
+// Thirty conventional-sized steps lead down from the ridge to the upper floor.
+const steps=30,topZ=-12.86,bottomZ=-3.76,bottomY=4.05,run=bottomZ-topZ,drop=padY-bottomY;
+const treadMat=textured([167,158,141],[3,8],38);
+for(let i=0;i<steps;i++){
+ const t=(i+.5)/steps,z=topZ+t*run,y=padY-t*drop;
+ box(2.62,.14,run/steps-.01,0,y-.06,z,treadMat);
+ box(2.62,drop/steps,.06,0,y-drop/(steps*2)-.07,z+run/(steps*2),stone);
+}
+box(3.75,.22,1.4,0,bottomY-.12,-3.15,stone);
+for(const side of [-1,1]){
+ const x=side*1.5;
+ line([x,padY-.21,topZ],[x,bottomY-.21,bottomZ],.14,stone);
+ for(let i=0;i<=steps;i+=5){const t=i/steps,z=topZ+t*run,y=padY-t*drop;line([x,y,z],[x,y+1.02,z],.043,rail)}
+ line([x,padY+1.02,topZ],[x,bottomY+1.02,bottomZ],.063,rail);
+}
+for(const t of [0,1]){
+ const z=topZ+t*run,y=padY-t*drop;
+ for(const x of [-1.8,1.8]){box(.17,.35,.17,x,y+.21,z,dark);box(.18,.08,.18,x,y+.43,z,mat(0xffe5ae,.3))}
+}
+// Door is at SECOND-FLOOR elevation, one full stair flight below the driveway.
 box(3.3,2.85,.16,0,5.37,-2.64,dark);
 box(2.95,2.53,.09,0,5.32,-2.76,glass);
 box(.09,2.53,.12,0,5.32,-2.83,metal);
-box(3.9,.16,1.55,0,3.82,-3.35,stone);
-
 // rough stone retaining walls
 for(let i=0;i<135;i++){const x=-18+(i%27)*1.4,z=9+Math.floor(i/27)*.8;const y=terrainHeight(x,z)+.03;const b=box(1.2,.35,.75,x,y,z,i%3===0?rock:stone);b.rotation.y=(random()-.5)*.3}
 // Meandering river following the foot of the hillside, replacing the former lake.
@@ -215,7 +239,8 @@ const features=[
 ['Solar array','The roof carries a modeled photovoltaic array. Net-zero operation requires energy modeling, storage, and real production data.',[-3,8.2,1]],
 ['Living roof','Vegetation and substrate can slow stormwater runoff, support pollinators, and buffer roof temperatures.',[6,7.9,5]],
 ['River & cascades','A meandering river replaces the former lake, with rocky edges and a waterfall. River water is not assumed safe for drinking.',[-13,1.2,13]],
-['Upper driveway','A winding driveway approaches from the high ground and meets a rear door on the glass-walled upper floor.',[3.2,4.3,-9]],
+['Upper parking terrace','A wider road reaches a two-car-scale permeable-paver arrival and turnaround area on the high ground above the living level.',[2,9.4,-18]],
+['Stairway to upper floor','Thirty outdoor steps with side rails descend from the hillside parking area to the rear second-floor entrance.',[0,6.6,-8.5]],
 ['Rainwater harvesting','Storage tanks can supply treated nonpotable water for landscape irrigation, subject to local requirements.',[9.6,2.3,12.5]],
 ['Greenhouse & food','A glazed greenhouse and terraced growing areas provide space for food cultivation.',[15,5.7,5]],
 ['Wind turbine','A vertical-axis turbine illustrates additional renewable generation; feasibility depends on wind resource and siting.',[21,11,-8]],
@@ -225,7 +250,7 @@ const features=[
 const layer=document.getElementById('markers'),featuresEl=document.getElementById('features'),detail=document.getElementById('detail');const markers=[];
 features.forEach((f,i)=>{const b=document.createElement('button');b.textContent=f[0];b.onclick=()=>select(i);featuresEl.appendChild(b);const marker=document.createElement('button');marker.className='marker';marker.textContent='+';marker.title=f[0];marker.onclick=()=>select(i);layer.appendChild(marker);markers.push({el:marker,pos:new THREE.Vector3(...f[2])})});
 function select(i){detail.innerHTML='<strong>'+features[i][0]+'</strong><p>'+features[i][1]+'</p>';[...featuresEl.children].forEach((b,j)=>b.classList.toggle('selected',i===j))}
-const views={overview:[[27,16,31],[0,4,1]],water:[[-15,8,32],[-7,2,13]],roof:[[14,25,17],[0,7,1]],driveway:[[22,12,-23],[5,4.5,-10]],inside:[[5,6,13],[0,5,2]]};
+const views={overview:[[27,16,31],[0,4,1]],water:[[-15,8,32],[-7,2,13]],roof:[[14,25,17],[0,7,1]],driveway:[[24,19,-23],[1,7,-12]],inside:[[5,6,13],[0,5,2]]};
 function go(name){const v=views[name];camera.position.set(...v[0]);orbit.target.set(...v[1]);orbit.update();document.querySelectorAll('.toolbar button').forEach(b=>b.classList.toggle('selected',b.id===name||(name==='roof'&&b.id==='roofview')))}
 for(const name of Object.keys(views)){const button=document.getElementById(name==='roof'?'roofview':name);if(button)button.onclick=()=>go(name)}
 document.getElementById('reset').onclick=()=>go('overview');
