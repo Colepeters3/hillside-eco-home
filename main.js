@@ -38,11 +38,89 @@ for(const x of [-6.4,-3.1,.4,4.1]){box(1.8,.5,.85,x,4.1,5.25,mat(0xb5aa90),upper
 for(const x of [-5,0,5]){const light=new THREE.PointLight(0xffb96b,12,11,2);light.position.set(x,6.75,4.5);scene.add(light);box(1.8,.04,.35,x,7.06,4.5,mat(0xffd49b,.35),upper)}
 // solar panel frames and individual cells
 for(let row=0;row<2;row++)for(let col=0;col<7;col++){const x=-7.6+col*2.42,z=-1.4+row*3.15;const panel=new THREE.Group();panel.position.set(x,8.13,z);panel.rotation.x=-.19;upper.add(panel);box(2.22,.07,2.75,0,0,0,dark,panel);box(2.12,.03,2.63,0,.055,0,solar,panel);for(let j=1;j<5;j++)box(2.1,.012,.012,0,.077,-1.3+j*.52,metal,panel);for(let j=1;j<4;j++)box(.012,.012,2.6,-1.06+j*.53,.077,0,metal,panel)}
+// Driveway enters from the high ground behind the house, with a raised access bridge.
+// The road climbs along the ridge and meets the upper level through a rear entry.
+const asphalt=textured([64,68,65],[4,18],24);
+const roadPoints=[
+ new THREE.Vector3(27,7.35,-32),
+ new THREE.Vector3(23,6.8,-28),
+ new THREE.Vector3(18,6.05,-23),
+ new THREE.Vector3(12,5.35,-18),
+ new THREE.Vector3(7,4.7,-14),
+ new THREE.Vector3(3.2,4.05,-9),
+ new THREE.Vector3(0,3.89,-3.1)
+];
+const drivewayCurve=new THREE.CatmullRomCurve3(roadPoints,false,'centripetal');
+function stripOnDrive(offsetY,width,material){
+ const vertices=[],uv=[],indices=[],total=95;
+ for(let i=0;i<=total;i++){
+  const t=i/total,p=drivewayCurve.getPoint(t),d=drivewayCurve.getTangent(t).normalize();
+  const n=new THREE.Vector3(-d.z,0,d.x);
+  for(let side of [-1,1]){
+   const v=p.clone().addScaledVector(n,side*width);
+   vertices.push(v.x,v.y+offsetY,v.z);uv.push(t*14,(side+1)*.5);
+  }
+  if(i<total){let j=i*2;indices.push(j,j+2,j+1,j+1,j+2,j+3)}
+ }
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
+ return mesh(geo,material);
+}
+stripOnDrive(-.19,2.25,stone);stripOnDrive(.035,2.06,asphalt);
+for(let i=3;i<89;i+=8){
+ const p=drivewayCurve.getPoint(i/95),tan=drivewayCurve.getTangent(i/95),n=new THREE.Vector3(-tan.z,0,tan.x);
+ for(let sign of [-1,1]){
+  const edge=p.clone().addScaledVector(n,sign*2.25);
+  // Lightweight retaining piers visually support the elevated driveway.
+  const below=Math.max(0,p.y-terrainHeight(edge.x,edge.z));
+  if(below>.8)box(.33,below,.33,edge.x,p.y-below/2-.12,edge.z,stone);
+  box(.2,.65,.2,edge.x,p.y+.34,edge.z,stone);
+ }
+}
+// Vehicle-scale hints on the driveway: two thin edge guide lines.
+for(let i=0;i<70;i++){
+ const t=(i+.5)/92,p=drivewayCurve.getPoint(t),tan=drivewayCurve.getTangent(t).normalize();
+ const dash=box(.06,.015,.38,p.x,p.y+.055,p.z,mat(0xe1d7a2,.75));
+ dash.rotation.y=Math.atan2(tan.x,tan.z);
+}
+// Rear upper-level doorway and threshold at the driveway arrival.
+box(3.3,2.85,.16,0,5.37,-2.64,dark);
+box(2.95,2.53,.09,0,5.32,-2.76,glass);
+box(.09,2.53,.12,0,5.32,-2.83,metal);
+box(3.9,.16,1.55,0,3.82,-3.35,stone);
+
 // rough stone retaining walls
 for(let i=0;i<135;i++){const x=-18+(i%27)*1.4,z=9+Math.floor(i/27)*.8;const y=terrainHeight(x,z)+.03;const b=box(1.2,.35,.75,x,y,z,i%3===0?rock:stone);b.rotation.y=(random()-.5)*.3}
-// natural lake surface and shoreline
-const lakeShape=new THREE.Shape();lakeShape.moveTo(-23,12);lakeShape.bezierCurveTo(-32,17,-27,29,-12,31);lakeShape.bezierCurveTo(1,34,16,27,14,18);lakeShape.bezierCurveTo(9,10,-6,12,-23,12);const lakeGeo=new THREE.ShapeGeometry(lakeShape,40);lakeGeo.rotateX(Math.PI/2);mesh(lakeGeo,water,0,.04,0);
-for(let i=0;i<220;i++){const t=random()*Math.PI*2,x=-7+20*Math.cos(t),z=21+9*Math.sin(t);const r=.15+random()*.65;const o=mesh(new THREE.DodecahedronGeometry(r,1),i%3?rock:stone,x,.1,z);o.scale.set(1,.45,1.1);o.rotation.y=random()*Math.PI}
+// Meandering river following the foot of the hillside, replacing the former lake.
+const riverPath=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(-48,.09,18),new THREE.Vector3(-29,.09,16),
+ new THREE.Vector3(-18,.09,13.3),new THREE.Vector3(-10,.09,14.4),
+ new THREE.Vector3(-1,.09,18),new THREE.Vector3(10,.09,22),
+ new THREE.Vector3(22,.09,19.5),new THREE.Vector3(40,.09,22)
+],false,'centripetal');
+const riverVerts=[],riverUV=[],riverIndices=[],riverBank=[];
+const riverSegments=135;
+for(let i=0;i<=riverSegments;i++){
+ const t=i/riverSegments,p=riverPath.getPoint(t),tan=riverPath.getTangent(t).normalize();
+ const side=new THREE.Vector3(-tan.z,0,tan.x),width=3.0+.48*Math.sin(t*Math.PI*5);
+ for(const sign of [-1,1]){const edge=p.clone().addScaledVector(side,sign*width);riverVerts.push(edge.x,.12,edge.z);riverUV.push(t*16,(sign+1)*.5)}
+ riverBank.push([p.clone(),side.clone(),width]);
+ if(i<riverSegments){const j=i*2;riverIndices.push(j,j+2,j+1,j+1,j+2,j+3)}
+}
+const riverGeo=new THREE.BufferGeometry();riverGeo.setAttribute('position',new THREE.Float32BufferAttribute(riverVerts,3));riverGeo.setAttribute('uv',new THREE.Float32BufferAttribute(riverUV,2));riverGeo.setIndex(riverIndices);riverGeo.computeVertexNormals();mesh(riverGeo,water);
+for(let i=4;i<riverSegments-4;i+=2){
+ const [p,side,width]=riverBank[i];
+ for(const sign of [-1,1])for(let j=0;j<3;j++){
+  const x=p.x+side.x*sign*(width+.15+random()*1.4),z=p.z+side.z*sign*(width+.15+random()*1.4);
+  const r=.16+random()*.52;
+  const b=mesh(new THREE.DodecahedronGeometry(r,1),random()>.45?rock:stone,x,.15,z);
+  b.scale.set(1.3,.4,1);b.rotation.y=random()*Math.PI;
+ }
+}
+for(let i=0;i<135;i++){
+ const t=.04+random()*.92,p=riverPath.getPoint(t),tan=riverPath.getTangent(t),side=new THREE.Vector3(-tan.z,0,tan.x);
+ const sign=random()>.5?1:-1,offset=3.6+random()*3.7;
+ ball(.08+random()*.24,p.x+side.x*sign*offset,.13,p.z+side.z*sign*offset,random()>.82?flower:plant,0);
+}
 // cascades
 const waterfallMat=new THREE.MeshPhysicalMaterial({color:0x8bc7d5,transparent:true,opacity:.65,roughness:.08,metalness:.1,side:THREE.DoubleSide});
 for(let level=0;level<3;level++){const x=-12-level*2,z=9+level*2.2,y=2.5-level*.85;for(let k=0;k<18;k++){const strand=box(.045+random()*.08,1.9,.035,x+(k-9)*.17,y,z,waterfallMat);strand.rotation.z=(random()-.5)*.18}for(let j=0;j<16;j++)ball(.08+random()*.13,x+(random()-.5)*3,y-.95,z+.25,mat(0xd4e6e2,.15),0)}
@@ -70,7 +148,8 @@ const features=[
 ['Earth-sheltered entrance','The lower level is recessed into the hillside. Earth contact can help moderate temperatures when waterproofing and insulation are properly designed.',[0,1.5,6.7]],
 ['Solar array','The roof carries a modeled photovoltaic array. Net-zero operation requires energy modeling, storage, and real production data.',[-3,8.2,1]],
 ['Living roof','Vegetation and substrate can slow stormwater runoff, support pollinators, and buffer roof temperatures.',[6,7.9,5]],
-['Waterfalls & lake','A naturalistic water feature represents the reference image. It is not assumed to be a safe potable water source.',[-13,1.2,12]],
+['River & cascades','A meandering river replaces the former lake, with rocky edges and a waterfall. River water is not assumed safe for drinking.',[-13,1.2,13]],
+['Upper driveway','A winding driveway approaches from the high ground and meets a rear door on the glass-walled upper floor.',[3.2,4.3,-9]],
 ['Rainwater harvesting','Storage tanks can supply treated nonpotable water for landscape irrigation, subject to local requirements.',[9.6,2.3,12.5]],
 ['Greenhouse & food','A glazed greenhouse and terraced growing areas provide space for food cultivation.',[15,5.7,5]],
 ['Wind turbine','A vertical-axis turbine illustrates additional renewable generation; feasibility depends on wind resource and siting.',[21,11,-8]],
@@ -80,9 +159,9 @@ const features=[
 const layer=document.getElementById('markers'),featuresEl=document.getElementById('features'),detail=document.getElementById('detail');const markers=[];
 features.forEach((f,i)=>{const b=document.createElement('button');b.textContent=f[0];b.onclick=()=>select(i);featuresEl.appendChild(b);const marker=document.createElement('button');marker.className='marker';marker.textContent='+';marker.title=f[0];marker.onclick=()=>select(i);layer.appendChild(marker);markers.push({el:marker,pos:new THREE.Vector3(...f[2])})});
 function select(i){detail.innerHTML='<strong>'+features[i][0]+'</strong><p>'+features[i][1]+'</p>';[...featuresEl.children].forEach((b,j)=>b.classList.toggle('selected',i===j))}
-const views={overview:[[27,16,31],[0,4,1]],water:[[-15,8,32],[-7,2,13]],roof:[[14,25,17],[0,7,1]],inside:[[5,6,13],[0,5,2]]};
-function go(name){const v=views[name];camera.position.set(...v[0]);orbit.target.set(...v[1]);orbit.update();document.querySelectorAll('.toolbar button').forEach(b=>b.classList.toggle('selected',b.id===name||name==='overview'&&b.id==='overview'))}
-for(const name of Object.keys(views))document.getElementById(name).onclick=()=>go(name);
+const views={overview:[[27,16,31],[0,4,1]],water:[[-15,8,32],[-7,2,13]],roof:[[14,25,17],[0,7,1]],driveway:[[22,12,-23],[5,4.5,-10]],inside:[[5,6,13],[0,5,2]]};
+function go(name){const v=views[name];camera.position.set(...v[0]);orbit.target.set(...v[1]);orbit.update();document.querySelectorAll('.toolbar button').forEach(b=>b.classList.toggle('selected',b.id===name||(name==='roof'&&b.id==='roofview')))}
+for(const name of Object.keys(views)){const button=document.getElementById(name==='roof'?'roofview':name);if(button)button.onclick=()=>go(name)}
 document.getElementById('reset').onclick=()=>go('overview');
 document.getElementById('roofToggle').onclick=e=>{upper.visible=true;const show=upper.children.filter(c=>c.position.y>7.2);const visible=!show[0].visible;show.forEach(o=>o.visible=visible);e.target.textContent=visible?'Hide roof':'Show roof'};
 document.getElementById('togglePanel').onclick=e=>{const body=document.getElementById('panelBody');body.hidden=!body.hidden;e.target.textContent=body.hidden?'+':'−'};
