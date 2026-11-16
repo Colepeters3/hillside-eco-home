@@ -1,32 +1,70 @@
-# Hillside Eco Home — Interactive 3D Model
+# Hillside Sanctuary — Interactive Sustainable House
 
-A Three.js model of a two-story earth-sheltered sustainable house with a lower-level entrance, solar panels, green roof, rainwater harvesting, cistern and pond.
+**Live website:** https://colepeters3.github.io/hillside-eco-home/  
+**Repository:** https://github.com/Colepeters3/hillside-eco-home
 
-## View locally
+This Three.js project is an interactive 3D concept for an Environmental Science class, based on a reference illustration of a modern, sustainable house built into a wooded hillside.
 
-Because this project uses JavaScript modules, run a local server in this directory:
+## Design overview
 
-```bash
-python -m http.server 8000
-```
+The building has a **glass-walled, cantilevered upper living floor** and an **earth-sheltered lower floor**. There are two separate ways to reach the house:
 
-Then open http://localhost:8000 in your browser. Internet access is needed for the Three.js CDN.
+- **Upper access:** a winding **driveway across the top of the hillside** approaches from the high ground, crosses a raised section, and connects to the **rear entrance of the upper floor**.
+- **Lower access:** a recessed entrance faces the landscape below the house.
 
-## Publish using GitHub Pages
+The lower landscape features a **meandering river with rocky banks and cascading waterfalls**. This river **replaces the lake/pond** shown in earlier versions. Terraced gardens, trees, and a greenhouse complete the landscape.
 
-1. Create a new **public** GitHub repository (for example `hillside-eco-home`).
-2. Upload `index.html`, `main.js`, and `style.css` to the **root** of the repository (README is optional).
-3. Open **Settings → Pages** in the repository.
-4. Under **Build and deployment**, select **Deploy from a branch**; select `main` and `/(root)`, then **Save**.
-5. Wait for the deployment and visit `https://YOUR-USERNAME.github.io/hillside-eco-home/` (replace YOUR-USERNAME).
+## Sustainability systems
 
-## Controls
+- Rooftop photovoltaic **solar panels**
+- Planted **green roof**
+- **Earth-sheltered construction**, natural daylight, and passive shading
+- Conceptual **vertical-axis wind turbine**
+- **Rainwater storage** tanks and potential nonpotable reuse
+- Potential **greywater recycling**, subject to treatment and local requirements
+- **Greenhouse** and terraced food-growing beds
+- Wood, stone, and potential lower-impact building materials
 
-- Drag to rotate
-- Scroll or pinch to zoom
-- Click numbered markers or feature buttons for explanations
-- Hide roof, hide markers, or reset the camera
+These systems illustrate sustainable strategies; the model does not establish that the house is net-zero or fully self-sufficient.
 
-## Notes
+## Explore the model
 
-This is an illustrative concept model, not a scaled architectural drawing. Pond water is not potable by default, rainwater is seasonal, and any water reuse needs appropriate treatment and compliance with local rules. Solar sizing, structural loads, water balance, drainage, and energy performance would require engineering calculations.
+| Control | Function |
+| --- | --- |
+| Left-click and drag | Rotate the camera |
+| Scroll wheel / pinch | Zoom |
+| Right-click and drag | Pan |
+| **01 / Exterior** | Overall house and hillside |
+| **02 / Water** | River and waterfalls |
+| **03 / Roof** | Solar array and living roof |
+| **04 / Driveway** | Upper approach road and access |
+| **05 / Interior** | Close view of the upper glass living level |
+| Feature buttons / '+' markers | Learn about individual sustainability systems |
+| Hide roof / Reset view | Adjust roof visibility or restore camera |
+
+## Website files
+
+- `index.html` — site layout, controls, and library import map
+- `style.css` — visual design and responsive UI
+- `main.js` — Three.js house, hillside, river, driveway, vegetation, lighting, and interaction
+- `README.md` — this documentation
+
+Three.js loads from a CDN, so the webpage needs internet access.
+
+## Run on GitHub Pages
+
+1. In GitHub, open **Settings → Pages**.
+2. Set **Build and deployment** to **Deploy from a branch**.
+3. Select `main` and `/(root)`, then save.
+4. Open https://colepeters3.github.io/hillside-eco-home/
+5. After new changes, allow GitHub Pages to redeploy and hard-refresh using **Ctrl + Shift + R** if needed.
+
+### Optional local testing
+
+From the folder containing `index.html`, run `py -m http.server 8000` on Windows (or `python -m http.server 8000` where available), then visit http://127.0.0.1:8000/. Localhost works only while that server is running.
+
+## Design limitations
+
+This is a **visual concept, not an engineered construction plan**. The driveway grade, vehicle access, retaining walls, bridge support, drainage and slope stability have not been verified. River erosion, setbacks, flood safety, and water quality would require site-specific analysis. Solar output, wind production, battery sizing, water treatment, heating/cooling loads, and embodied carbon also require real calculations.
+
+**Next design goals:** refine the roadway grade and terrain intersection, make water movement more realistic, and incorporate higher-quality architecture, vegetation, and material assets.
